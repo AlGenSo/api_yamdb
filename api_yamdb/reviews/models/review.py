@@ -6,6 +6,7 @@ from .title import Title
 
 class Review(models.Model):
     """Модель отзыва на произведение."""
+    
     title = models.ForeignKey(
         Title,
         on_delete=models.CASCADE,
@@ -26,5 +27,5 @@ class Review(models.Model):
     )
 
     def __str__(self):
-        
+
         return self.text
