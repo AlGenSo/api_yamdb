@@ -1,7 +1,8 @@
 from xml.dom import ValidationErr
+
+from django.core.validators import RegexValidator
 from rest_framework import serializers
 from rest_framework.validators import UniqueTogetherValidator
-from django.core.validators import RegexValidator
 
 from api_yamdb.users.models import User
 
