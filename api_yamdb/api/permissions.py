@@ -3,7 +3,7 @@ from rest_framework import permissions
 
 class Admin(permissions.BasePermission):
     '''Кастомный пермишен, который расширит возможности встроенных пермишенов
-    и разрешит полный доступ к объекту только админу(суперюзеру)'''
+    и разрешит полный доступ к объекту только админу(суперюзеру) dsgsdagsdgd'''
 
     def has_permission(self, request, view):
         user = request.user
