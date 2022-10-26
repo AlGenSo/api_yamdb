@@ -1,12 +1,12 @@
 from django.db import models
-
 from users.models import User
+
 from .review import Review
 
 
 class Comment(models.Model):
     """Модель комментария к отзыву."""
-    
+
     review = models.ForeignKey(
         Review,
         on_delete=models.CASCADE,
@@ -18,7 +18,7 @@ class Comment(models.Model):
         verbose_name='Автор'
     )
     pub_date = models.DateField(
-        auto_add_now=True,
+        auto_now_add=True,
         verbose_name='Дата публикации'
     )
     text = models.TextField(

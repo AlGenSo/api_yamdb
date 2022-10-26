@@ -6,8 +6,6 @@ from django.db import models
 from .category import Category
 from .genre import Genre
 
-year_now = dt.datetime.now().year()
-
 
 class Title(models.Model):
     """Модель произведения."""
@@ -18,7 +16,7 @@ class Title(models.Model):
     )
     year = models.IntegerField(
         validators=[
-            MaxValueValidator(year_now)
+            MaxValueValidator(dt.datetime.now().year)
         ],
         help_text='Дата'
     )
@@ -36,7 +34,7 @@ class Title(models.Model):
     )
     category = models.ForeignKey(
         Category,
-        on_delete=models.SET_NULL,
+        on_delete=models.CASCADE,
         verbose_name='Категория',
         related_name='category'
     )
