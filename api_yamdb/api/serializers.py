@@ -1,12 +1,10 @@
 from xml.dom import ValidationErr
-
 from django.core.validators import RegexValidator
 from rest_framework import serializers
-from rest_framework.relations import SlugRelatedField
 from rest_framework.validators import UniqueTogetherValidator
 
-from api_yamdb.reviews.models import category, comment, genre, review, title
-from api_yamdb.users.models import User
+from reviews.models import category, comment, genre, review, title
+from users.models import User
 
 
 class UserSerializer(serializers.ModelSerializer):
@@ -24,6 +22,16 @@ class UserSerializer(serializers.ModelSerializer):
         )
 
 
+class RoleSerializer(serializers.ModelSerializer):
+    '''Преобразование данных класса Role'''
+    class Meta:
+        model = User
+        fields = (
+            'username', 'email', 'first_name',
+            'last_name', 'bio', 'role')
+        read_only_fields = ('role',)
+
+
 class SignUpSerializer(serializers.Serializer):
     '''Преобразование данных класса SignUp.
     Проверка на допустимые символы и запрещённый ник'''
@@ -35,8 +43,8 @@ class SignUpSerializer(serializers.Serializer):
             message=('Такой Никнейм уже зарегистрирован!'),
         ),
         RegexValidator(
-            queryset=User.objects.all(),
-            fields=('username'),
+            # queryset=User.objects.all(),
+            # fields=('username'),
             regex=r'^[\w.@+-]+$',
             message='Недопустимые символы! Только @/./+/-/_',
             code='invalid_username',
@@ -64,6 +72,7 @@ class TokenSerializer(serializers.Serializer):
     confirmation_code = serializers.CharField(required=True)
 
     class Meta:
+        model = User
         fields = ('username', 'confirmation_code')
 
 
