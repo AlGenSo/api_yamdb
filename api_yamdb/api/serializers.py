@@ -1,10 +1,13 @@
-from xml.dom import ValidationErr
-from django.core.validators import RegexValidator
+# from xml.dom import ValidationErr
+# from django.core.validators import RegexValidator
 from rest_framework import serializers
 # from rest_framework.validators import UniqueTogetherValidator
+from django.contrib.auth import get_user_model
 
 from reviews.models import category, comment, genre, review, title
-from users.models import User
+# from users.models import User
+
+User = get_user_model()
 
 
 class UserSerializer(serializers.ModelSerializer):
@@ -32,7 +35,7 @@ class RoleSerializer(serializers.ModelSerializer):
         read_only_fields = ('role',)
 
 
-class SignUpSerializer(serializers.Serializer):
+class SignUpSerializer(serializers.ModelSerializer):
     '''Преобразование данных класса SignUp.
     Проверка на допустимые символы и запрещённый ник'''
 
@@ -42,28 +45,28 @@ class SignUpSerializer(serializers.Serializer):
         #    fields=('username'),
         #    message=('Такой Никнейм уже зарегистрирован!'),
         # ),
-        RegexValidator(
-            regex=r'^[\w.@+-]+$',
-            message='Недопустимые символы! Только @/./+/-/_',
-            code='invalid_username',
-        ),
+        # RegexValidator(
+        #    regex=r'^[\w.@+-]+\\z',
+        #    message='Недопустимые символы! Только @/./+/-/_',
+        #    code='invalid_username',
+        # ),
     ]
 
-    def validate_username(self, username):
-        '''Проверка ограничения для username:
-        заперт на использование 'me'.'''
+    # def validate_username(self, username):
+    #    '''Проверка ограничения для username:
+    #    заперт на использование 'me'.'''
 
-        if username == 'me':
-            raise ValidationErr(
-                'Нельзя использовать <me>!'
-            )
+    #    if username == 'me':
+    #        raise ValidationErr(
+    #            'Нельзя использовать <me>!'
+    #        )
 
     class Meta:
         model = User
         fields = ('username', 'email')
 
 
-class TokenSerializer(serializers.Serializer):
+class TokenSerializer(serializers.ModelSerializer):
     '''Преобразование данных Tokena.'''
 
     username = serializers.CharField(max_length=150, required=True)
@@ -77,9 +80,22 @@ class TokenSerializer(serializers.Serializer):
 class TitleSerializer(serializers.ModelSerializer):
     '''Преобразование данных Title.'''
 
+    rating = serializers.IntegerField(
+        source='reviews__score__avg', read_only=True
+    )
+
     class Meta:
         model = title.Title
-        fields = '__all__'
+        fields = (
+            'id',
+            'name',
+            'year',
+            'genre',
+            'category',
+            'description',
+            'rating'
+        )
+        read_only_fields = ('rating',)
 
 
 class CategorySerializer(serializers.ModelSerializer):
@@ -87,7 +103,7 @@ class CategorySerializer(serializers.ModelSerializer):
 
     class Meta:
         model = category.Category
-        fields = '__all__'
+        fields = ('name', 'slug')
 
 
 class GenreSerializer(serializers.ModelSerializer):
@@ -95,7 +111,7 @@ class GenreSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = genre.Genre
-        fields = '__all__'
+        fields = ('name', 'slug')
 
 
 class ReviewSerializer(serializers.ModelSerializer):
@@ -103,7 +119,7 @@ class ReviewSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = review.Review
-        fields = '__all__'
+        fields = ('id', 'title', 'author', 'text', 'pub_date', 'score')
 
 
 class CommentSerializer(serializers.ModelSerializer):
@@ -111,4 +127,4 @@ class CommentSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = comment.Comment
-        fields = '__all__'
+        fields = ('review', 'author', 'pub_date', 'text')

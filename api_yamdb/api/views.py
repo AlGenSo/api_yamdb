@@ -1,4 +1,8 @@
 from django.shortcuts import get_object_or_404
+from django.core.exceptions import ValidationError
+from django.core.validators import RegexValidator
+from xml.dom import ValidationErr
+from rest_framework.validators import UniqueTogetherValidator
 from rest_framework import permissions, filters, viewsets, status
 from rest_framework.decorators import action
 from rest_framework.response import Response
@@ -12,7 +16,7 @@ from rest_framework.permissions import (IsAuthenticated,
 from reviews.models import category, comment, genre, review, title
 from users.models import User
 
-from .permissions import AdminOrReadOnly, UserIsAuthorOrReadOnly
+from .permissions import Admin, AdminOrReadOnly, UserIsAuthorOrReadOnly
 from .serializers import (CategorySerializer, CommentSerializer,
                           GenreSerializer, ReviewSerializer,
                           TitleSerializer, UserSerializer,
@@ -87,7 +91,7 @@ class UsersViewSet(viewsets.ModelViewSet):
 
     queryset = User.objects.all()
     serializer_class = UserSerializer
-    permission_classes = (IsAuthenticated, AdminOrReadOnly,)
+    permission_classes = (Admin,)
     lookup_field = 'username'
     filter_backends = (filters.SearchFilter, )
     search_fields = ('username', )
@@ -121,8 +125,12 @@ class GetApiToken(APIView):
 
     def post(self, request):
         serializer = TokenSerializer(data=request.data)
-        serializer.is_valid(raise_exception=True)
+
+        if not serializer.is_valid():
+            return Response(status=status.HTTP_400_BAD_REQUEST)
+
         data = serializer.validated_data
+
         try:
             user = User.objects.get(username=data['username'])
         except User.DoesNotExist:
@@ -143,6 +151,28 @@ class ApiSignup(APIView):
 
     permission_classes = (permissions.AllowAny,)
 
+    validators = [
+        UniqueTogetherValidator(
+            queryset=User.objects.all(),
+            fields=('username'),
+            message=('Такой Никнейм уже зарегистрирован!'),
+        ),
+        RegexValidator(
+            regex=r'^[\w.@+-]+\\z',
+            message='Недопустимые символы! Только @/./+/-/_',
+            code='invalid_username',
+        ),
+    ]
+
+    def validate_username(self, username):
+        '''Проверка ограничения для username:
+        заперт на использование 'me'.'''
+
+        if username == 'me':
+            raise ValidationErr(
+                'Нельзя использовать <me>!'
+            )
+
     @staticmethod
     def send_email(data):
         email = EmailMessage(
@@ -154,8 +184,24 @@ class ApiSignup(APIView):
 
     def post(self, request):
         serializer = SignUpSerializer(data=request.data)
-        serializer.is_valid(raise_exception=True)
+        if not serializer.is_valid():
+            raise ValidationError(serializer.errors)
         user = serializer.save()
+
+        email = request.data.get('email')
+        user = User.objects.filter(email=email)
+
+        if user.exists():
+            user = user.get(email=email)
+
+            return Response(
+                {'message': 'Пользователь с такой электронной почтой уже '
+                            'существует.'
+                            'Код подтверждения отправлен повторно. '
+                 },
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
         email_body = (
             f'Код подтверждения для доступа к API: {user.confirmation_code}'
         )
