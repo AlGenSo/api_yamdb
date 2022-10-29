@@ -100,7 +100,11 @@ class GenreSerializer(serializers.ModelSerializer):
 
 class ReviewSerializer(serializers.ModelSerializer):
     '''Преобразование данных Review.'''
-
+    
+    score = serializers.IntegerField(
+        source='reviews__score__avg', read_only=True
+    )
+    
     class Meta:
         model = review.Review
         fields = '__all__'
