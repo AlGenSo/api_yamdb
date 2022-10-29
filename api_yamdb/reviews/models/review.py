@@ -12,7 +12,6 @@ class Review(models.Model):
         Title,
         on_delete=models.CASCADE,
         verbose_name='Произведение'
-
     )
     author = models.ForeignKey(
         User,

@@ -1,4 +1,3 @@
-from xml.dom import ValidationErr
 from django.core.validators import RegexValidator
 from rest_framework import serializers
 # from rest_framework.validators import UniqueTogetherValidator
@@ -32,7 +31,7 @@ class RoleSerializer(serializers.ModelSerializer):
         read_only_fields = ('role',)
 
 
-class SignUpSerializer(serializers.Serializer):
+class SignUpSerializer(serializers.ModelSerializer):
     '''Преобразование данных класса SignUp.
     Проверка на допустимые символы и запрещённый ник'''
 
@@ -53,17 +52,17 @@ class SignUpSerializer(serializers.Serializer):
         '''Проверка ограничения для username:
         заперт на использование 'me'.'''
 
-        if username == 'me':
-            raise ValidationErr(
-                'Нельзя использовать <me>!'
-            )
+        #if username == 'me':
+        #    raise ValidationErr(
+        #        'Нельзя использовать <me>!'
+        #    )
 
     class Meta:
         model = User
         fields = ('username', 'email')
 
 
-class TokenSerializer(serializers.Serializer):
+class TokenSerializer(serializers.ModelSerializer):
     '''Преобразование данных Tokena.'''
 
     username = serializers.CharField(max_length=150, required=True)
@@ -73,21 +72,12 @@ class TokenSerializer(serializers.Serializer):
         model = User
         fields = ('username', 'confirmation_code')
 
-
-class TitleSerializer(serializers.ModelSerializer):
-    '''Преобразование данных Title.'''
-
-    class Meta:
-        model = title.Title
-        fields = '__all__'
-
-
 class CategorySerializer(serializers.ModelSerializer):
     '''Преобразование данных Category.'''
 
     class Meta:
         model = category.Category
-        fields = '__all__'
+        fields = ('name', 'slug')
 
 
 class GenreSerializer(serializers.ModelSerializer):
@@ -95,19 +85,49 @@ class GenreSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = genre.Genre
-        fields = '__all__'
+        fields = ('name', 'slug')
 
+
+class TitleReadSerializer(serializers.ModelSerializer):
+    '''Преобразование данных Title при чтении.'''
+
+    category = CategorySerializer(read_only=True)
+    genre = GenreSerializer(many=True, read_only=True)
+    rating = serializers.IntegerField(
+        source='reviews__score__avg', read_only=True
+    )
+
+    class Meta:
+        model = title.Title
+        fields = ('id', 'name', 'year', 'genre', 'category', 'description', 'rating')
+
+
+class TitleWriteSerializer(serializers.ModelSerializer):
+    '''Преобразование данных Title при создании.'''
+    genre = serializers.SlugRelatedField(
+        queryset=genre.Genre.objects.all(),
+        slug_field='slug',
+        many=True
+    )
+    category = serializers.SlugRelatedField(
+        queryset=category.Category.objects.all(),
+        slug_field='slug'
+    )
+    rating = serializers.IntegerField(
+        source='reviews__score__avg', read_only=True
+    )
+
+    class Meta:
+        model = title.Title
+        fields = ('id', 'name', 'year', 'genre', 'category', 'description', 'rating')
+        read_only_fields = ('rating',)
 
 class ReviewSerializer(serializers.ModelSerializer):
     '''Преобразование данных Review.'''
     
-    score = serializers.IntegerField(
-        source='reviews__score__avg', read_only=True
-    )
-    
     class Meta:
         model = review.Review
-        fields = '__all__'
+        fields = ('id', 'title', 'author', 'text', 'pub_date', 'score')
 
 
 class CommentSerializer(serializers.ModelSerializer):
@@ -115,4 +135,4 @@ class CommentSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = comment.Comment
-        fields = '__all__'
+        fields = ('review', 'author', 'pub_date', 'text')
