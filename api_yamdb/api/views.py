@@ -16,44 +16,56 @@ from rest_framework.permissions import (IsAuthenticated,
 from reviews.models import category, comment, genre, review, title
 from users.models import User
 
-from .permissions import Admin, AdminOrReadOnly, UserIsAuthorOrReadOnly
+from .permissions import Admin, AdminOrReadOnly, UserIsAuthorOrReadOnly, Admin
 from .serializers import (CategorySerializer, CommentSerializer,
-                          GenreSerializer, ReviewSerializer,
-                          TitleSerializer, UserSerializer,
+                          GenreSerializer, ReviewSerializer, TitleWriteSerializer, TitleReadSerializer, UserSerializer,
                           RoleSerializer, SignUpSerializer, TokenSerializer)
 
 
 class TitleViewSet(viewsets.ModelViewSet):
     queryset = title.Title.objects.all()
-    serializer_class = TitleSerializer
-    permission_classes = [AdminOrReadOnly]
-    pagination_class = PageNumberPagination
-    filter_backends = (filters.SearchFilter)
+    permission_classes = [AdminOrReadOnly,]
+    # pagination_class = PageNumberPagination
+    filter_backends = (filters.SearchFilter,)
     search_fields = ('name',)
 
+    def get_serializer_class(self):
+        if self.action in ('list', 'retrieve'):
+            return TitleReadSerializer
 
-class GenreViewSet(viewsets.ModelViewSet):
+        return TitleWriteSerializer
+
+
+class CreateListDeleteViewSet(mixins.CreateModelMixin, mixins.ListModelMixin,
+                              mixins.DestroyModelMixin, viewsets.GenericViewSet):
+    pass
+
+
+class GenreViewSet(CreateListDeleteViewSet):
     queryset = genre.Genre.objects.all()
     serializer_class = GenreSerializer
-    permission_classes = [AdminOrReadOnly]
-    pagination_class = PageNumberPagination
-    filter_backends = (filters.SearchFilter)
+    permission_classes = [AdminOrReadOnly,]
+    # pagination_class = PageNumberPagination
+    filter_backends = (filters.SearchFilter,)
+    lookup_field = 'slug'
     search_fields = ('name',)
 
 
-class CategoryViewSet(viewsets.ModelViewSet):
+class CategoryViewSet(CreateListDeleteViewSet):
     queryset = category.Category.objects.all()
     serializer_class = CategorySerializer
-    permission_classes = [AdminOrReadOnly]
-    pagination_class = PageNumberPagination
-    filter_backends = (filters.SearchFilter)
+    permission_classes = [AdminOrReadOnly,]
+    # pagination_class = PageNumberPagination
+    filter_backends = (filters.SearchFilter,)
+    lookup_field = 'slug'
     search_fields = ('name',)
 
 
 class ReviewViewSet(viewsets.ModelViewSet):
+    queryset = review.Review.objects.all()
     serializer_class = ReviewSerializer
-    permission_classes = [UserIsAuthorOrReadOnly]
-    pagination_class = PageNumberPagination
+    permission_classes = [UserIsAuthorOrReadOnly,]
+    # pagination_class = PageNumberPagination
 
     def get_queryset(self):
         get_title = get_object_or_404(
@@ -70,8 +82,8 @@ class ReviewViewSet(viewsets.ModelViewSet):
 
 class CommentViewSet(viewsets.ModelViewSet):
     serializer_class = CommentSerializer
-    permission_classes = [IsAuthenticatedOrReadOnly]
-    pagination_class = PageNumberPagination
+    permission_classes = [UserIsAuthorOrReadOnly,]
+    # pagination_class = PageNumberPagination
 
     def get_queryset(self):
         get_review = get_object_or_404(
@@ -93,7 +105,7 @@ class UsersViewSet(viewsets.ModelViewSet):
     serializer_class = UserSerializer
     permission_classes = (Admin,)
     lookup_field = 'username'
-    filter_backends = (filters.SearchFilter, )
+    filter_backends = (filters.SearchFilter,)
     search_fields = ('username', )
 
     @action(
@@ -150,6 +162,29 @@ class ApiSignup(APIView):
     '''Получение кода подтверждения на email.'''
 
     permission_classes = (permissions.AllowAny,)
+    serializer = SignUpSerializer
+
+    validators = [
+        UniqueTogetherValidator(
+            queryset=User.objects.all(),
+            fields=('username'),
+            message=('Такой Никнейм уже зарегистрирован!'),
+        ),
+        RegexValidator(
+            regex=r'^[\w.@+-]+\\z',
+            message='Недопустимые символы! Только @/./+/-/_',
+            code='invalid_username',
+        ),
+    ]
+
+    def validate_username(self, username):
+        '''Проверка ограничения для username:
+        заперт на использование 'me'.'''
+
+        if username == 'me':
+            raise ValidationErr(
+                'Нельзя использовать <me>!'
+            )
 
     validators = [
         UniqueTogetherValidator(

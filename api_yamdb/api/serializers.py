@@ -1,5 +1,4 @@
-# from xml.dom import ValidationErr
-# from django.core.validators import RegexValidator
+# # from django.core.validators import RegexValidator
 from rest_framework import serializers
 # from rest_framework.validators import UniqueTogetherValidator
 from django.contrib.auth import get_user_model
@@ -56,10 +55,10 @@ class SignUpSerializer(serializers.ModelSerializer):
     #    '''Проверка ограничения для username:
     #    заперт на использование 'me'.'''
 
-    #    if username == 'me':
-    #        raise ValidationErr(
-    #            'Нельзя использовать <me>!'
-    #        )
+        #if username == 'me':
+        #    raise ValidationErr(
+        #        'Нельзя использовать <me>!'
+        #    )
 
     class Meta:
         model = User
@@ -114,9 +113,43 @@ class GenreSerializer(serializers.ModelSerializer):
         fields = ('name', 'slug')
 
 
+class TitleReadSerializer(serializers.ModelSerializer):
+    '''Преобразование данных Title при чтении.'''
+
+    category = CategorySerializer(read_only=True)
+    genre = GenreSerializer(many=True, read_only=True)
+    rating = serializers.IntegerField(
+        source='reviews__score__avg', read_only=True
+    )
+
+    class Meta:
+        model = title.Title
+        fields = ('id', 'name', 'year', 'genre', 'category', 'description', 'rating')
+
+
+class TitleWriteSerializer(serializers.ModelSerializer):
+    '''Преобразование данных Title при создании.'''
+    genre = serializers.SlugRelatedField(
+        queryset=genre.Genre.objects.all(),
+        slug_field='slug',
+        many=True
+    )
+    category = serializers.SlugRelatedField(
+        queryset=category.Category.objects.all(),
+        slug_field='slug'
+    )
+    rating = serializers.IntegerField(
+        source='reviews__score__avg', read_only=True
+    )
+
+    class Meta:
+        model = title.Title
+        fields = ('id', 'name', 'year', 'genre', 'category', 'description', 'rating')
+        read_only_fields = ('rating',)
+
 class ReviewSerializer(serializers.ModelSerializer):
     '''Преобразование данных Review.'''
-
+    
     class Meta:
         model = review.Review
         fields = ('id', 'title', 'author', 'text', 'pub_date', 'score')

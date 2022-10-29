@@ -25,18 +25,17 @@ class Title(models.Model):
         blank=True,
         help_text='Описание'
     )
-    genre = models.ForeignKey(
+    genre = models.ManyToManyField(
         Genre,
-        on_delete=models.SET_NULL,
         verbose_name='Произведение',
         related_name='genre',
-        null=True
+        blank=True
     )
     category = models.ForeignKey(
         Category,
-        on_delete=models.CASCADE,
+        on_delete=models.PROTECT,
         verbose_name='Категория',
-        related_name='category'
+        related_name='category',
     )
 
     def __str__(self):
