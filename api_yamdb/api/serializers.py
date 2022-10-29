@@ -1,7 +1,7 @@
 from xml.dom import ValidationErr
 from django.core.validators import RegexValidator
 from rest_framework import serializers
-from rest_framework.validators import UniqueTogetherValidator
+# from rest_framework.validators import UniqueTogetherValidator
 
 from reviews.models import category, comment, genre, review, title
 from users.models import User
@@ -37,14 +37,12 @@ class SignUpSerializer(serializers.Serializer):
     Проверка на допустимые символы и запрещённый ник'''
 
     validators = [
-        UniqueTogetherValidator(
-            queryset=User.objects.all(),
-            fields=('username'),
-            message=('Такой Никнейм уже зарегистрирован!'),
-        ),
+        # UniqueTogetherValidator(
+        #    queryset=User.objects.all(),
+        #    fields=('username'),
+        #    message=('Такой Никнейм уже зарегистрирован!'),
+        # ),
         RegexValidator(
-            # queryset=User.objects.all(),
-            # fields=('username'),
             regex=r'^[\w.@+-]+$',
             message='Недопустимые символы! Только @/./+/-/_',
             code='invalid_username',

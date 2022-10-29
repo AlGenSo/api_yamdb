@@ -55,7 +55,7 @@ class AdminOrModeratorOrAuthor(permissions.BasePermission):
 class UserIsAuthorOrReadOnly(permissions.BasePermission):
     '''Кастомный пермишен, дающий доступ ко всем действиям только автору.'''
 
-    def has_object_permission(self, request, obj):
+    def has_object_permission(self, request, view, obj):
         return (
             obj.author == request.user
             or request.method in permissions.SAFE_METHODS
