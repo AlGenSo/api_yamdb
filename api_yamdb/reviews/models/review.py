@@ -6,7 +6,8 @@ from .title import Title
 
 class Review(models.Model):
     """Модель отзыва на произведение."""
-
+    
+    RATE_CHOICES = zip(range(1, 11), range(1, 11))
     title = models.ForeignKey(
         Title,
         on_delete=models.CASCADE,
@@ -25,6 +26,7 @@ class Review(models.Model):
         auto_now_add=True,
         verbose_name='Дата публикации'
     )
+    score = models.IntegerField(choices=RATE_CHOICES, defaul=1)
 
     def __str__(self):
 
