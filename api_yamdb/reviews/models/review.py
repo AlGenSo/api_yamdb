@@ -26,7 +26,7 @@ class Review(models.Model):
         auto_now_add=True,
         verbose_name='Дата публикации'
     )
-    score = models.IntegerField(choices=RATE_CHOICES, defaul=1)
+    score = models.IntegerField(choices=RATE_CHOICES, default=1)
 
     def __str__(self):
 
