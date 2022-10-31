@@ -1,29 +1,38 @@
 from django.shortcuts import get_object_or_404
+from django.core.mail import send_mail
+from django.contrib.auth.tokens import default_token_generator
+from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework import permissions, filters, viewsets, status, mixins
 from rest_framework.decorators import action
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework_simplejwt.tokens import RefreshToken
-from django.core.mail import EmailMessage
-from rest_framework.pagination import PageNumberPagination
-from rest_framework.permissions import (IsAuthenticated,
-                                        IsAuthenticatedOrReadOnly)
+from rest_framework.pagination import LimitOffsetPagination
+from rest_framework.permissions import IsAuthenticated
 
 from reviews.models import category, comment, genre, review, title
 from users.models import User
 
-from .permissions import AdminOrReadOnly, UserIsAuthorOrReadOnly, Admin
+from .filters import TitleFilter
+from .permissions import Admin, AdminOrReadOnly, UserIsAuthorOrReadOnly
 from .serializers import (CategorySerializer, CommentSerializer,
-                          GenreSerializer, ReviewSerializer, TitleWriteSerializer, TitleReadSerializer, UserSerializer,
-                          RoleSerializer, SignUpSerializer, TokenSerializer)
+                          GenreSerializer, ReviewSerializer,
+                          TitleWriteSerializer, TitleReadSerializer,
+                          UserSerializer, TokenSerializer)
 
 
 class TitleViewSet(viewsets.ModelViewSet):
     queryset = title.Title.objects.all()
-    permission_classes = [AdminOrReadOnly,]
+    permission_classes = [AdminOrReadOnly, ]
     # pagination_class = PageNumberPagination
-    filter_backends = (filters.SearchFilter,)
+    filter_backends = (filters.SearchFilter, DjangoFilterBackend, )
     search_fields = ('name',)
+    filterset_class = TitleFilter
+
+    # def get_queryset(self):
+    #     queryset = title.Title.objects.all()
+    #     genre = self.request.query_params.get('genre__slug')
+    #     return queryset.filter(genre__slug=genre)
 
     def get_serializer_class(self):
         if self.action in ('list', 'retrieve'):
@@ -32,15 +41,19 @@ class TitleViewSet(viewsets.ModelViewSet):
         return TitleWriteSerializer
 
 
-class CreateListDeleteViewSet(mixins.CreateModelMixin, mixins.ListModelMixin,
-                              mixins.DestroyModelMixin, viewsets.GenericViewSet):
+class CreateListDeleteViewSet(
+    mixins.CreateModelMixin,
+    mixins.ListModelMixin,
+    mixins.DestroyModelMixin,
+    viewsets.GenericViewSet
+):
     pass
 
 
 class GenreViewSet(CreateListDeleteViewSet):
     queryset = genre.Genre.objects.all()
     serializer_class = GenreSerializer
-    permission_classes = [AdminOrReadOnly,]
+    permission_classes = [AdminOrReadOnly, ]
     # pagination_class = PageNumberPagination
     filter_backends = (filters.SearchFilter,)
     lookup_field = 'slug'
@@ -50,7 +63,7 @@ class GenreViewSet(CreateListDeleteViewSet):
 class CategoryViewSet(CreateListDeleteViewSet):
     queryset = category.Category.objects.all()
     serializer_class = CategorySerializer
-    permission_classes = [AdminOrReadOnly,]
+    permission_classes = [AdminOrReadOnly, ]
     # pagination_class = PageNumberPagination
     filter_backends = (filters.SearchFilter,)
     lookup_field = 'slug'
@@ -58,9 +71,8 @@ class CategoryViewSet(CreateListDeleteViewSet):
 
 
 class ReviewViewSet(viewsets.ModelViewSet):
-    queryset = review.Review.objects.all()
     serializer_class = ReviewSerializer
-    permission_classes = [UserIsAuthorOrReadOnly,]
+    permission_classes = [UserIsAuthorOrReadOnly, ]
     # pagination_class = PageNumberPagination
 
     def get_queryset(self):
@@ -78,7 +90,7 @@ class ReviewViewSet(viewsets.ModelViewSet):
 
 class CommentViewSet(viewsets.ModelViewSet):
     serializer_class = CommentSerializer
-    permission_classes = [UserIsAuthorOrReadOnly,]
+    permission_classes = [UserIsAuthorOrReadOnly, ]
     # pagination_class = PageNumberPagination
 
     def get_queryset(self):
@@ -108,73 +120,77 @@ class UsersViewSet(viewsets.ModelViewSet):
         methods=['GET', 'PATCH'],
         detail=False,
         permission_classes=(IsAuthenticated,),
-        url_path='me')
-    def about_user(self, request):
-        serializer = UserSerializer(request.user)
-        if request.method == 'PATCH':
-            if request.user.is_admin:
-                serializer = UserSerializer(
-                    request.user,
-                    data=request.data,
-                    partial=True)
-            else:
-                serializer = RoleSerializer(
-                    request.user,
-                    data=request.data,
-                    partial=True)
-            serializer.is_valid(raise_exception=True)
-            serializer.save()
-            return Response(serializer.data, status=status.HTTP_200_OK)
+    )
+    def me(self, request):
+        if request.method == 'GET':
+            serializer = UserSerializer(request.user)
+            return Response(serializer.data)
+        serializer = UserSerializer(
+            request.user,
+            data=request.data,
+            partial=True
+        )
+        serializer.is_valid(raise_exception=True)
+        serializer.save(role=request.user.role)
         return Response(serializer.data)
 
 
 class GetApiToken(APIView):
-    '''Получение JWT-токена'''
-
-    def post(self, request):
-        serializer = TokenSerializer(data=request.data)
-        serializer.is_valid(raise_exception=True)
-        data = serializer.validated_data
-        try:
-            user = User.objects.get(username=data['username'])
-        except User.DoesNotExist:
-            return Response(
-                {'username': 'Пользователь не найден!'},
-                status=status.HTTP_404_NOT_FOUND)
-        if data.get('confirmation_code') == user.confirmation_code:
-            token = RefreshToken.for_user(user).access_token
-            return Response({'token': str(token)},
-                            status=status.HTTP_201_CREATED)
-        return Response(
-            {'confirmation_code': 'Неверный код подтверждения!'},
-            status=status.HTTP_400_BAD_REQUEST)
-
-
-class ApiSignup(APIView):
-    '''Получение кода подтверждения на email.'''
+    '''Получение JWT-токена и кода подтверждения'''
 
     permission_classes = (permissions.AllowAny,)
 
-    @staticmethod
-    def send_email(data):
-        email = EmailMessage(
-            subject=data['email_subject'],
-            body=data['email_body'],
-            to=[data['to_email']]
-        )
-        email.send()
+    def post(self, request):
+
+        serializer = TokenSerializer(data=request.data)
+
+        if serializer.is_valid():
+            data = serializer.validated_data
+
+            try:
+                user = User.objects.get(username=data['username'])
+            except User.DoesNotExist:
+                return Response(
+                    {'username': 'Пользователь не найден!'},
+                    status=status.HTTP_404_NOT_FOUND)
+            if data.get('confirmation_code') == user.confirmation_code:
+                token = RefreshToken.for_user(user).access_token
+                return Response({'token': str(token)},
+                                status=status.HTTP_201_CREATED)
+            return Response(
+                {'confirmation_code': 'Неверный код подтверждения!'},
+                status=status.HTTP_400_BAD_REQUEST)
+
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+
+class ApiSignup(APIView):
+    '''Регистрация и получение кода подтверждения на email.'''
+
+    permission_classes = (permissions.AllowAny,)
 
     def post(self, request):
-        serializer = SignUpSerializer(data=request.data)
+
+        serializer = UserSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
-        user = serializer.save()
-        email_body = (
-            f'Код подтверждения для доступа к API: {user.confirmation_code}'
+        serializer.save()
+
+        user = get_object_or_404(
+            User, username=serializer.validated_data['username']
         )
-        data = {
-            'email_body': email_body,
-            'to_email': user.email,
-            'email_subject': 'Код подтверждения'
-        }
-        self.send_email(data)
-        return Response(serializer.data, status=status.HTTP_200_OK)
+
+        confirmation_code = default_token_generator.make_token(user)
+        user.confirmation_code = confirmation_code
+        user.save()
+
+        send_mail(
+            subject="Код подтверждения",
+            message=(
+                f'Код подтверждения'
+                f'для доступа регистрации: {confirmation_code}'
+            ),
+            from_email=None,
+            recipient_list=[user.email],
+        )
+
+        return Response(serializer.validated_data, status=status.HTTP_200_OK)
