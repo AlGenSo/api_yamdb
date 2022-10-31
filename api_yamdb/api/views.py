@@ -193,4 +193,8 @@ class ApiSignup(APIView):
             recipient_list=[user.email],
         )
 
+<<<<<<< HEAD
         return Response(serializer.validated_data, status=status.HTTP_200_OK)
+=======
+        return Response(serializer.validated_data, status=status.HTTP_200_OK)
+>>>>>>> 7f325fb38e3626d9b569a2575c7a586c886adc6e
