@@ -1,3 +1,4 @@
+from re import U
 from django.shortcuts import get_object_or_404
 from django.core.mail import send_mail
 from django.contrib.auth.tokens import default_token_generator
@@ -7,14 +8,16 @@ from rest_framework.decorators import action
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework_simplejwt.tokens import RefreshToken
+from django.core.mail import EmailMessage
 from rest_framework.pagination import LimitOffsetPagination
 from rest_framework.permissions import IsAuthenticated
+from django.db.models import Avg
 
 from reviews.models import category, comment, genre, review, title
 from users.models import User
 
 from .filters import TitleFilter
-from .permissions import Admin, AdminOrReadOnly, UserIsAuthorOrReadOnly
+from .permissions import Admin, AdminOrReadOnly, ReviewPermissions, UserIsAuthorOrReadOnly
 from .serializers import (CategorySerializer, CommentSerializer,
                           GenreSerializer, ReviewSerializer,
                           TitleWriteSerializer, TitleReadSerializer,
@@ -22,7 +25,7 @@ from .serializers import (CategorySerializer, CommentSerializer,
 
 
 class TitleViewSet(viewsets.ModelViewSet):
-    queryset = title.Title.objects.all()
+    queryset = title.Title.objects.all().annotate(rating=Avg('review__score'))
     permission_classes = [AdminOrReadOnly, ]
     # pagination_class = PageNumberPagination
     filter_backends = (filters.SearchFilter, DjangoFilterBackend, )
@@ -72,7 +75,7 @@ class CategoryViewSet(CreateListDeleteViewSet):
 
 class ReviewViewSet(viewsets.ModelViewSet):
     serializer_class = ReviewSerializer
-    permission_classes = [UserIsAuthorOrReadOnly, ]
+    permission_classes = [ReviewPermissions, ]
     # pagination_class = PageNumberPagination
 
     def get_queryset(self):
@@ -90,18 +93,20 @@ class ReviewViewSet(viewsets.ModelViewSet):
 
 class CommentViewSet(viewsets.ModelViewSet):
     serializer_class = CommentSerializer
-    permission_classes = [UserIsAuthorOrReadOnly, ]
+    permission_classes = [ReviewPermissions, ]
     # pagination_class = PageNumberPagination
 
     def get_queryset(self):
-        get_review = get_object_or_404(
-            review.Review, pk=self.kwargs.get('review')
+        queryset = comment.Comment.objects.filter(
+            review_id=self.kwargs.get('review_id')
         )
-        return comment.Comment.objects.filter(review=get_review)
+        return queryset
 
     def perform_create(self, serializer):
+        title_id = self.kwargs.get('title_id')
+        review_id = self.kwargs.get('review_id')
         get_review = get_object_or_404(
-            review.Review, pk=self.kwargs.get('review')
+            review.Review, pk=review_id, title_id=title_id
         )
         serializer.save(author=self.request.user, review=get_review)
 
@@ -193,8 +198,4 @@ class ApiSignup(APIView):
             recipient_list=[user.email],
         )
 
-<<<<<<< HEAD
         return Response(serializer.validated_data, status=status.HTTP_200_OK)
-=======
-        return Response(serializer.validated_data, status=status.HTTP_200_OK)
->>>>>>> 7f325fb38e3626d9b569a2575c7a586c886adc6e

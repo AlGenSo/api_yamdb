@@ -56,27 +56,6 @@ class TokenSerializer(serializers.ModelSerializer):
         fields = ('username', 'confirmation_code')
 
 
-class TitleSerializer(serializers.ModelSerializer):
-    '''Преобразование данных Title.'''
-
-    rating = serializers.IntegerField(
-        source='reviews__score__avg', read_only=True
-    )
-
-    class Meta:
-        model = title.Title
-        fields = (
-            'id',
-            'name',
-            'year',
-            'genre',
-            'category',
-            'description',
-            'rating'
-        )
-        read_only_fields = ('rating',)
-
-
 class CategorySerializer(serializers.ModelSerializer):
     '''Преобразование данных Category.'''
 
@@ -98,9 +77,7 @@ class TitleReadSerializer(serializers.ModelSerializer):
 
     category = CategorySerializer(read_only=True)
     genre = GenreSerializer(many=True, read_only=True)
-    rating = serializers.IntegerField(
-        source='reviews__score__avg', read_only=True
-    )
+    rating = serializers.IntegerField()
 
     class Meta:
         model = title.Title
@@ -113,11 +90,11 @@ class TitleReadSerializer(serializers.ModelSerializer):
             'description',
             'rating'
         )
-        read_only_fields = ('rating',)
 
 
 class TitleWriteSerializer(serializers.ModelSerializer):
     '''Преобразование данных Title при создании.'''
+
     genre = serializers.SlugRelatedField(
         queryset=genre.Genre.objects.all(),
         slug_field='slug',
@@ -142,6 +119,7 @@ class TitleWriteSerializer(serializers.ModelSerializer):
 
 class ReviewSerializer(serializers.ModelSerializer):
     '''Преобразование данных Review.'''
+
     author = serializers.SlugRelatedField(slug_field='username',
                                           read_only=True)
     title = serializers.SlugRelatedField(slug_field='id',
@@ -154,25 +132,12 @@ class ReviewSerializer(serializers.ModelSerializer):
         #     queryset=review.Review.objects.all(),
         #     fields=('title', 'author'))]
 
-    # def validate(self, data):
-    #     super().validate(data)
-    #
-    #     if self.context['request'].method != 'POST':
-    #         return data
-    #
-    #     user = self.context['request'].user
-    #     title_id = (
-    #         self.context['request'].parser_context['kwargs']['title']
-    #     )
-    #     if review.Review.objects.filter(author=user, title__id=title_id).exists():
-    #         raise serializers.ValidationError(
-    #                 "Вы уже оставили отзыв на данное произведение")
-    #     return data
-
 
 class CommentSerializer(serializers.ModelSerializer):
     '''Преобразование данных Comment.'''
 
+    author = serializers.SlugRelatedField(slug_field='username',
+                                          read_only=True)
     class Meta:
         model = comment.Comment
-        fields = ('review', 'author', 'pub_date', 'text')
+        fields = ('id', 'review', 'author', 'pub_date', 'text')

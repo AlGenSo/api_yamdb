@@ -10,12 +10,18 @@ class Comment(models.Model):
     review = models.ForeignKey(
         Review,
         on_delete=models.CASCADE,
-        verbose_name='Отзыв'
+        verbose_name='Отзыв',
+        related_name='comments',
+        blank=True,
+        null=True
     )
     author = models.ForeignKey(
         User,
         on_delete=models.CASCADE,
-        verbose_name='Автор'
+        verbose_name='Автор',
+        related_name='comments',
+        blank=True,
+        null=True
     )
     pub_date = models.DateField(
         auto_now_add=True,

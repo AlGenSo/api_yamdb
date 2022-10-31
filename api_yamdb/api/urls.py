@@ -6,17 +6,18 @@ from .views import (UsersViewSet, GetApiToken, ApiSignup,
                     GenreViewSet, ReviewViewSet, TitleViewSet)
 
 router = DefaultRouter()
-router.register('users', UsersViewSet, basename='user')
-router.register('titles', TitleViewSet, basename='title')
-router.register('categories', CategoryViewSet, basename='category')
+router.register(
+    r'titles/(?P<title_id>\d+)/reviews/(?P<review_id>\d+)/comments',
+    CommentViewSet, basename='comments'
+)
 router.register(
     r'titles/(?P<title>\d+)/reviews',
     ReviewViewSet, basename='review')
+router.register('users', UsersViewSet, basename='user')
+router.register('titles', TitleViewSet, basename='title')
+router.register('categories', CategoryViewSet, basename='category')
 router.register('genres', GenreViewSet, basename='genre')
-router.register(
-    r'titles/(?P<title_id>\d+)/reviews/(?P<review_id>\d+)/comments',
-    CommentViewSet, basename='comment'
-)
+
 
 urlpatterns = [
     path('v1/', include(router.urls)),
