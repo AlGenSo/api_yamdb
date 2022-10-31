@@ -1,18 +1,20 @@
 from django.shortcuts import get_object_or_404
 from django.core.mail import send_mail
 from django.contrib.auth.tokens import default_token_generator
+from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework import permissions, filters, viewsets, status, mixins
 from rest_framework.decorators import action
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework_simplejwt.tokens import RefreshToken
-# from rest_framework.pagination import PageNumberPagination
+from rest_framework.pagination import LimitOffsetPagination
 from rest_framework.permissions import IsAuthenticated
 
 from reviews.models import category, comment, genre, review, title
 from users.models import User
 
-from .permissions import Admin, AdminOrReadOnly, UserIsAuthorOrReadOnly, Admin
+from .filters import TitleFilter
+from .permissions import Admin, AdminOrReadOnly, UserIsAuthorOrReadOnly
 from .serializers import (CategorySerializer, CommentSerializer,
                           GenreSerializer, ReviewSerializer,
                           TitleWriteSerializer, TitleReadSerializer,
@@ -23,8 +25,14 @@ class TitleViewSet(viewsets.ModelViewSet):
     queryset = title.Title.objects.all()
     permission_classes = [AdminOrReadOnly, ]
     # pagination_class = PageNumberPagination
-    filter_backends = (filters.SearchFilter,)
+    filter_backends = (filters.SearchFilter, DjangoFilterBackend, )
     search_fields = ('name',)
+    filterset_class = TitleFilter
+
+    # def get_queryset(self):
+    #     queryset = title.Title.objects.all()
+    #     genre = self.request.query_params.get('genre__slug')
+    #     return queryset.filter(genre__slug=genre)
 
     def get_serializer_class(self):
         if self.action in ('list', 'retrieve'):
@@ -63,7 +71,6 @@ class CategoryViewSet(CreateListDeleteViewSet):
 
 
 class ReviewViewSet(viewsets.ModelViewSet):
-    queryset = review.Review.objects.all()
     serializer_class = ReviewSerializer
     permission_classes = [UserIsAuthorOrReadOnly, ]
     # pagination_class = PageNumberPagination
