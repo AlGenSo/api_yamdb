@@ -11,7 +11,7 @@ ROLES = (
 
 
 class User(AbstractUser):
-    '''Кастомная модель User'''
+    """Кастомная модель User"""
 
     username = models.CharField(
         verbose_name='Ник пользователя',

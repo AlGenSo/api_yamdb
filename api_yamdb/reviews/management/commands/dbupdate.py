@@ -13,5 +13,4 @@ class DbUpdate(BaseCommand):
         self.stdout.write('== Импортируем CSV-файлы ==')
 
         with open(self.file_path, mode='r') as f:
-            reader = csv.DictReader(f)
-            pass
+            csv.DictReader(f)
