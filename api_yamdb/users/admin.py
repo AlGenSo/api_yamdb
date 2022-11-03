@@ -5,6 +5,8 @@ from .models import User
 
 @admin.register(User)
 class UserAdmin(admin.ModelAdmin):
+    """Настройка User для панели Admin"""
+
     list_display = (
         'pk',
         'username',

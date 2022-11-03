@@ -1,24 +1,24 @@
 from django import forms
 
-from .models import category, genre, title
+from .models import Category, Genre, Title
 
 
 class TitleForm(forms.ModelForm):
 
     class Meta:
-        model = title.Title
+        model = Title
         fields = '__all__'
 
 
 class CategoryForm(forms.ModelForm):
 
     class Meta:
-        model = category.Category
+        model = Category
         fields = '__all__'
 
 
 class GenreForm(forms.ModelForm):
 
     class Meta:
-        model = genre.Genre
+        model = Genre
         fields = '__all__'

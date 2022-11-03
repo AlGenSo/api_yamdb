@@ -18,11 +18,11 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
     'rest_framework',
+    'django_filters',
     'rest_framework_simplejwt',
     'users.apps.UsersConfig',
-    'api.apps.ApiConfig',
     'reviews.apps.ReviewsConfig',
-    'django_filters',
+    'api.apps.ApiConfig',
 ]
 
 MIDDLEWARE = [
@@ -106,6 +106,9 @@ REST_FRAMEWORK = {
     'DEFAULT_AUTHENTICATION_CLASSES': [
         'rest_framework_simplejwt.authentication.JWTAuthentication',
     ],
+    'DEFAULT_FILTER_BACKENDS': [
+        'django_filters.rest_framework.DjangoFilterBackend',
+    ],
     'DEFAULT_PAGINATION_CLASS':
         'rest_framework.pagination.LimitOffsetPagination',
     'PAGE_SIZE': 10,
@@ -115,3 +118,5 @@ SIMPLE_JWT = {
     'ACCESS_TOKEN_LIFETIME': timedelta(days=1),
     'AUTH_HEADER_TYPES': ('Bearer',),
 }
+
+OUR_EMAIL = 'OurEmailAddress@yandex.ru'

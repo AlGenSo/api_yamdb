@@ -5,7 +5,13 @@ from .validators import validate_username
 
 
 class User(AbstractUser):
-    '''Кастомная модель User'''
+    """Кастомная модель User."""
+
+    ROLES = (
+        ('user', 'User'),
+        ('moderator', 'Moderator'),
+        ('admin', 'Admin')
+    )
 
     ROLES = (
         ('user', 'User'),
