@@ -27,6 +27,7 @@ class SignUpSerializer(serializers.ModelSerializer):
             raise ValidationError(
                 'Пожалуйста, выберите другой ник. Этот нам не нравится :('
             )
+
         return attrs
 
     class Meta:
