@@ -1,9 +1,7 @@
-from django.contrib.auth import get_user_model
+from django.forms import ValidationError
 from rest_framework import serializers
 
-from reviews.models import Category, Comment, Genre, Review, Title
-
-User = get_user_model()
+from reviews.models import Category, Comment, Genre, Review, Title, User
 
 
 class UserSerializer(serializers.ModelSerializer):
@@ -43,6 +41,16 @@ class SignUpSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
         fields = ('username', 'email')
+
+    def validate(self, attrs):
+        if attrs['username'] == 'me':
+            raise ValidationError(
+                'Пожалуйста, выберите другой ник. Этот нам не нравится:('
+            )
+        if User.objects.filter(username=self.username).exists():
+            raise ValidationError(
+                'Ник уже занят'
+            )
 
 
 class TokenSerializer(serializers.ModelSerializer):
