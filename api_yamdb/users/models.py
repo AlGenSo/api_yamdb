@@ -3,15 +3,15 @@ from django.db import models
 
 from .validators import validate_username
 
-ROLES = (
-    ('user', 'User'),
-    ('moderator', 'Moderator'),
-    ('admin', 'Admin')
-)
-
 
 class User(AbstractUser):
     '''Кастомная модель User'''
+
+    ROLES = (
+        ('user', 'User'),
+        ('moderator', 'Moderator'),
+        ('admin', 'Admin')
+    )
 
     username = models.CharField(
         verbose_name='Ник пользователя',

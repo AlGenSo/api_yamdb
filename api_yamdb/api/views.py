@@ -9,10 +9,11 @@ from rest_framework_simplejwt.tokens import RefreshToken
 # from rest_framework.pagination import PageNumberPagination
 from rest_framework.permissions import IsAuthenticated
 
+# from .filters import TitleFilter
 from reviews.models import category, comment, genre, review, title
 from users.models import User
 
-from .permissions import Admin, AdminOrReadOnly, UserIsAuthorOrReadOnly, Admin
+from .permissions import Admin, AdminOrReadOnly, UserIsAuthorOrReadOnly
 from .serializers import (CategorySerializer, CommentSerializer,
                           GenreSerializer, ReviewSerializer,
                           TitleWriteSerializer, TitleReadSerializer,
