@@ -1,6 +1,5 @@
 from django.forms import ValidationError
 from rest_framework import serializers
-
 from reviews.models import Category, Comment, Genre, Review, Title, User
 
 
@@ -20,6 +19,25 @@ class UserSerializer(serializers.ModelSerializer):
         )
 
 
+class SignUpSerializer(serializers.ModelSerializer):
+    """Преобразование Sign Up."""
+
+    def validate(self, attrs):
+        if attrs['username'] == 'me':
+            raise ValidationError(
+                'Пожалуйста, выберите другой ник. Этот нам не нравится :('
+            )
+        return attrs
+
+    class Meta:
+        model = User
+        lookup_field = 'username'
+        fields = (
+            'username',
+            'email'
+        )
+
+
 class RoleSerializer(serializers.ModelSerializer):
     """Преобразование данных класса Role"""
 
@@ -29,28 +47,6 @@ class RoleSerializer(serializers.ModelSerializer):
             'username', 'email', 'first_name',
             'last_name', 'bio', 'role')
         read_only_fields = ('role',)
-
-
-class SignUpSerializer(serializers.ModelSerializer):
-    """Преобразование данных класса SignUp.
-    Проверка на допустимые символы и запрещённый ник"""
-
-    username = serializers.CharField(max_length=150,)
-    email = serializers.EmailField(max_length=254,)
-
-    class Meta:
-        model = User
-        fields = ('username', 'email')
-
-    def validate(self, attrs):
-        if attrs['username'] == 'me':
-            raise ValidationError(
-                'Пожалуйста, выберите другой ник. Этот нам не нравится:('
-            )
-        if User.objects.filter(username=self.username).exists():
-            raise ValidationError(
-                'Ник уже занят'
-            )
 
 
 class TokenSerializer(serializers.ModelSerializer):

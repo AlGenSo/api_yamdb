@@ -4,15 +4,19 @@ from django.db import models
 from .validators import validate_username
 
 
+USER = 'user'
+MODERATOR = 'moderator'
+ADMIN = 'admin'
+
+
 class User(AbstractUser):
     """Кастомная модель User."""
 
     ROLES = (
-        ('user', 'User'),
-        ('moderator', 'Moderator'),
-        ('admin', 'Admin')
+        (USER, 'Пользователь'),
+        (MODERATOR, 'Модератор'),
+        (ADMIN, 'Администратор')
     )
-
     username = models.CharField(
         verbose_name='Ник пользователя',
         validators=(validate_username,),
@@ -46,7 +50,7 @@ class User(AbstractUser):
         verbose_name='Роль пользователя',
         blank=True,
         choices=ROLES,
-        default='user'
+        default=USER
     )
     confirmation_code = models.CharField(
         verbose_name='Код подтверждения',
@@ -65,9 +69,9 @@ class User(AbstractUser):
     @property
     def is_admin(self):
 
-        return self.role == 'admin' or self.is_superuser
+        return self.role == ADMIN or self.is_superuser
 
     @property
     def is_moderator(self):
 
-        return self.role == 'moderator'
+        return self.role == MODERATOR

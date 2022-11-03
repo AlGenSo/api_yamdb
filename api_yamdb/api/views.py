@@ -1,24 +1,25 @@
 from django.contrib.auth.tokens import default_token_generator
 from django.core.mail import send_mail
 from django.db.models import Avg
-from django_filters.rest_framework import DjangoFilterBackend
 from django.shortcuts import get_object_or_404
+from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework import filters, mixins, permissions, status, viewsets
 from rest_framework.decorators import action
-from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
+from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework_simplejwt.tokens import RefreshToken
+from reviews.models import Category, Comment, Genre, Review, Title
+from users.models import User
+
 from api_yamdb.settings import OUR_EMAIL
 
 from .filters import TitleFilter
 from .permissions import IsAdmin, IsAdminOrReadOnly, ReviewPermissions
 from .serializers import (CategorySerializer, CommentSerializer,
                           GenreSerializer, ReviewSerializer,
-                          TitleWriteSerializer, TitleReadSerializer,
-                          TokenSerializer, UserSerializer)
-from reviews.models import Category, Comment, Genre, Review, Title
-from users.models import User
+                          TitleReadSerializer, TitleWriteSerializer,
+                          TokenSerializer, UserSerializer, SignUpSerializer)
 
 
 class TitleViewSet(viewsets.ModelViewSet):
@@ -187,7 +188,7 @@ class ApiSignup(APIView):
 
     def post(self, request):
 
-        serializer = UserSerializer(data=request.data)
+        serializer = SignUpSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         serializer.save()
 
