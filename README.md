@@ -35,7 +35,7 @@
 git clone https://github.com/AlGenSo/api_yamdb.git
 ```
 ```
-cd yatube
+cd api_yamdb
 ```
 ---
 Cоздать и активировать виртуальное окружение:
